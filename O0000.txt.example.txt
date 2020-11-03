@@ -1,0 +1,45 @@
+; Archivo de script ejemplo
+; a fecha 2020 11 3
+; el caracter ; al principio de una linea indica que es un comentario
+; Nx indica el nombre de la opción, en las lineas siguientes se especifican las acciones que realiza la acción
+; usaremos códigos M, para emular un ISO-G
+; G04 indica una pausa con una duración expresada con el parámetro Tx en milisegundos
+; M03 indica iniciar algo, con formato 'M03 Fruta'.
+;	Si le pasas un exe, lo ejecuta
+;	Si le pasas una ruta de archivo, lo abre
+;	Si le pasas una ruta de directorio, lo abre con explorer
+; M04 queda reservado a un futuro
+; M06 es una llamada a linea de comandos de MS-DOS (pendiente desarrollarlo)
+; M30 indica el fin del archivo (y puedes poner lo que quieras después, ya que no será leido por el programa)
+; La idea es que M98 Ox provoque la lectura de un archivo con subprogramas, pero lo dejo como algo que hacer después de tener esto en marcha
+
+;sobre formato: 
+;	- Es Mxx, es decir, no será M3, si no M03. 
+;	- Espacios entre parámetros
+;	- No espacios entre letra de parámetro y parámetro, a no ser que hablemos de nombres, como en las N (no son obligatorios, pero quedan mejor)
+;	- Una M por linea, y la M tiene que estar al principio
+
+N Abrir directorio Aplicaciones
+M03 FD:\App\
+
+N Abrir Media-Downloader
+M03 FD:\App\MediaDownloader\Media_Downloader.exe
+
+N Pics
+M03 FD:\Pics
+
+N Descargas
+M03 FC:\Users\cirno\Downloads
+
+N Directorio proyectos C#
+M03 FD:\Proyectos\C#
+
+N Música
+M03 FC:\Users\xxx\AppData\Roaming\OKR\PlayListGenerator\Playlist.mpcpl
+
+N Abrir O0000
+M03 FC:\Users\xxx\AppData\Roaming\OKR\InicioRapido\O0000.txt
+
+M30
+
+Aquí podemos poner cosas sin especificar que es un comentario, ya que al estar detrás de un M30, no se interpretan
