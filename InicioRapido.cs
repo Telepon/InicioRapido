@@ -9,10 +9,15 @@ namespace InicioRapido
     /*
      TODO
 
-        - Pensar otras acciones que no sean sólo "ejecutar esto en cmd".
-        - Repasar "interfaz".
+        - Pensar otras acciones que no sean sólo "ejecutar esto en cmd":
+            - Se ha añadido G04 T, un temporizador.
+
+        - Investigar posibilidad de pasar datos (texto) a pastebin.
+        - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
+        - Que las opciones sean accesibles mediante comandos de texto, y no sólo con números. Los comandos de texto irán definidos en la opción, y se comprobará que no haya ninguno repetido
         - Implementar subopciones, que son opciones contenidas en otro archivo. Identificados con Oxxxx, llamados con M98 Oxxxx
         - Implementar subacciones, que son acciones escritas después del M30. Identificadas con Pxxxx, llamadas con M98 Pxxxx
+        - Repasar "interfaz".
 
     Change log:
         2020 11 3
