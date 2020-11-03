@@ -15,8 +15,12 @@ namespace InicioRapido
         - Investigar posibilidad de pasar datos (texto) a pastebin.
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
         - Que las opciones sean accesibles mediante comandos de texto, y no sólo con números. Los comandos de texto irán definidos en la opción, y se comprobará que no haya ninguno repetido
-        - Implementar subopciones, que son opciones contenidas en otro archivo. Identificados con Oxxxx, llamados con M98 Oxxxx
-        - Implementar subacciones, que son acciones escritas después del M30. Identificadas con Pxxxx, llamadas con M98 Pxxxx
+       
+        - Implementar submenús, que son listas de opciones que no son la principal, y se pueden llamar desde una opción, mediante M98.
+            - Lo ideal es poder tenerlas tanto en archivos separados como en el mismo archivo
+            - En el caso del mismo archivo, la llamada será M98 Pxxxx.
+            - En el caso de un archivo diferente, la llamada será M98 Oxxxx
+            - La implementación reusará código, pero en principio no usaremos la misma función, ya que emplearemos un array diferente (en principio)      
         - Repasar "interfaz".
 
     Change log:
