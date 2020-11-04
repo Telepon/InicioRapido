@@ -8,19 +8,20 @@ namespace InicioRapido
 
     /*
      TODO
-
-        - Pensar otras acciones que no sean sólo "ejecutar esto en cmd":
-            - Se ha añadido G04 T, un temporizador.
+        
+        - Añadir un parametro de acceso rápido para las opciones, para acceder mediante cadena de texto. Esto precisrá un array - DONE
+            - Revisar con tiempo y estructurar para que sea escalable a subopciones.
+            - Añadir una comprobación de que no haya atajos repetidos.
 
         - Investigar posibilidad de pasar datos (texto) a pastebin.
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
-        - Que las opciones sean accesibles mediante comandos de texto, y no sólo con números. Los comandos de texto irán definidos en la opción, y se comprobará que no haya ninguno repetido
        
         - Implementar submenús, que son listas de opciones que no son la principal, y se pueden llamar desde una opción, mediante M98.
             - Lo ideal es poder tenerlas tanto en archivos separados como en el mismo archivo
             - En el caso del mismo archivo, la llamada será M98 Pxxxx.
             - En el caso de un archivo diferente, la llamada será M98 Oxxxx
-            - La implementación reusará código, pero en principio no usaremos la misma función, ya que emplearemos un array diferente (en principio)      
+            - La implementación reusará código, pero en principio no usaremos la misma función, ya que emplearemos un array diferente (en principio)   
+    
         - Repasar "interfaz".
 
     Change log:
@@ -28,15 +29,21 @@ namespace InicioRapido
             - Añadida gestión de errores a la hora de ejecutar acciones
             - Añadida acción G04 Tx, donde x indica un tiempo de pausa en milisegundos
             - Añadidas regiones al código
+
+        2020 11 4
+            - Añadida la opción de especificar accesos rapidos a las opciones.
      */
 
     class InicioRapido
     {
 
         string Ruta_CarpetaAppData, NombreFichero_Opciones, RutaCompleta_Opciones;
-        string[] Array_ListaOpciones = new String[999];
+        string[] Array_ListaOpciones = new string[999];
         string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción (sin contar subopciones, que tendrán su propia función para ser leídas)
         string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
+        string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
+
+
 
         static void Main(string[] args)
         {
@@ -102,14 +109,23 @@ namespace InicioRapido
 
             foreach (string line in Array_Archivo)
             {
-
+                
                 String_LeerNIf = line;
-                if (String_LeerNIf == "") { String_LeerNIf = ";"; } 
+                if (String_LeerNIf == "") { String_LeerNIf = ";"; } //cambiamos lineas vacias a ;
 
 
-                if (String_LeerNIf.Substring(0, 1) == "N")
+                if (String_LeerNIf.Substring(0, 1) == "N")//si empieza por N, es una opción
                 {
                     Array_ListaOpciones[Contador_N] = String_LeerNIf.Substring(1) + " L" + Contador_Linea;
+
+                    if (String_LeerNIf.Contains("#"))
+                    {
+                        Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
+                    }
+                    else
+                    {
+                        Array_AtajoOpciones[Contador_N] = null;
+                    }
                     Contador_N++;
                 }
                 else
@@ -131,6 +147,7 @@ namespace InicioRapido
         #region Interfaz; mostramos opciones, logica de seleccion, lectura de acciones en opción
         public void MostrarOpciones()
         {
+            char[] Array_CaracteresFinTextoOpcion = new char[2] {'L', '#'};
             int Contador_N = 0;
 
             Console.Clear();
@@ -144,12 +161,17 @@ namespace InicioRapido
                 if (line.Substring(0, 3) == "M30")
                 {
                     Console.WriteLine("");
-                    Console.WriteLine(line.Substring(0, line.LastIndexOf('L')));
+                    Console.WriteLine(line.Substring(0, 3));                    
                     break;
                 }
                 else
                 {
-                    Console.WriteLine(Contador_N + line.Substring(0, line.LastIndexOf('L')));
+                    
+                    Console.Write(Environment.NewLine + Contador_N + line.Substring(0, line.IndexOfAny(Array_CaracteresFinTextoOpcion)));
+                    
+                    Console.ForegroundColor = ConsoleColor.Red; //Letras rojas
+                    Console.Write('#' + Array_AtajoOpciones[Contador_N]);                     
+                    Console.ForegroundColor = ConsoleColor.Gray; //Letras grises, color por defecto
                     Contador_N++;
                 }
 
@@ -163,6 +185,7 @@ namespace InicioRapido
             string Entrada_OpcionSeleccionada;
             int EntradaConvertida_OpcionSeleccionada = -1;
             int Indice_OpcionSeleccionadaEnArrayArchivo;
+            int Contador_ComparacionListaOpcionesConAtajos;
 
 
             do
@@ -171,11 +194,25 @@ namespace InicioRapido
 
                 Entrada_OpcionSeleccionada = Console.ReadLine();
 
-                try { EntradaConvertida_OpcionSeleccionada = Convert.ToInt32(Entrada_OpcionSeleccionada); }
-                catch
+                try { EntradaConvertida_OpcionSeleccionada = Convert.ToInt32(Entrada_OpcionSeleccionada); } //si es un int, es el número de la opción
+                catch //si no, puede ser el atajo
                 {
-                    Error_ConvertirOpcionSeleccionada = true;
-                    Console.WriteLine("Introduce un número");
+                    Contador_ComparacionListaOpcionesConAtajos = 0; //ponemos el contador a 0
+                    foreach (string line in Array_AtajoOpciones)
+                    {
+                        if (line == Entrada_OpcionSeleccionada) {
+                            EntradaConvertida_OpcionSeleccionada = Contador_ComparacionListaOpcionesConAtajos;
+                            break; 
+                        }
+                        Contador_ComparacionListaOpcionesConAtajos++;
+                    }
+                    if(EntradaConvertida_OpcionSeleccionada == -1)//es decir, si no ha habido coincidencia
+                    {
+                        Error_ConvertirOpcionSeleccionada = true;
+                        Console.WriteLine("Introduce un número o el atajo de una acción");
+
+                    }
+
 
                 }
 
@@ -185,7 +222,9 @@ namespace InicioRapido
             //primero sacamos el numero de linea en el que empieza la opción (indice 0)
             //si, eso es lo que hace la linea a continuación; lee el numero tras la L en el string del array de opciones
             //se recomienda separar la linea en sus funciones basicas por si quieres entenderla
-            Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1));
+            
+             Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1));
+            
             LeerAccionesDeOpcion(Indice_OpcionSeleccionadaEnArrayArchivo);
 
 
