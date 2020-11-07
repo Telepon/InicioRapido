@@ -39,6 +39,7 @@ namespace InicioRapido
     {
 
         string Ruta_CarpetaAppData, NombreFichero_Opciones, RutaCompleta_Opciones;
+
         string[] Array_ListaOpciones = new string[999];
         string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción (sin contar subopciones, que tendrán su propia función para ser leídas)
         string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
@@ -50,7 +51,7 @@ namespace InicioRapido
         static void Main(string[] args)
         {
             InicioRapido IR = new InicioRapido();
-            Console.SetWindowSize(35, 20);
+            Console.SetWindowSize(40, 20);
 
             IR.InicializarVariables();
             IR.InicializarDirectorioCFG();
@@ -121,17 +122,21 @@ namespace InicioRapido
 
                     if (String_LeerNIf.Contains("#"))
                     {
-                        if (Array.IndexOf(Array_AtajoOpciones, (String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1))) == -1)
-                        {
-                            Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
-                        }
-                        else
+                        if ((String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1)) != "") //evitamos meter en el array si no hay atajo especificado
                         {
 
-                            Console.WriteLine("Atajos repetidos en el mismo menú\nComprueba el script");
-                            Console.ReadLine();
-                            Environment.Exit(0);
+                            if (Array.IndexOf(Array_AtajoOpciones, (String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1))) == -1)
+                            {
+                                Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
+                            }
+                            else
+                            {
 
+                                Console.WriteLine("Atajos repetidos en el mismo menú\nComprueba el script");
+                                Console.ReadLine();
+                                Environment.Exit(0);
+
+                            }
                         }
                     }
                     else
@@ -148,9 +153,8 @@ namespace InicioRapido
                      break;
                 }
 
-                }
+            }
             
-
         }
         #endregion
 
@@ -164,13 +168,12 @@ namespace InicioRapido
             Console.WriteLine("Lista de opciones");
             Console.WriteLine("");
             Console.WriteLine("Nº|Nombre");
-            Console.WriteLine("");
 
             foreach (string line in Array_ListaOpciones)
             {
                 if (line.Substring(0, 3) == "M30")
                 {
-                    Console.WriteLine("");
+                    Console.WriteLine("\n");
                     Console.WriteLine(line.Substring(0, 3));                    
                     break;
                 }
@@ -187,6 +190,8 @@ namespace InicioRapido
 
             }
             Int_NumeroOpciones = Contador_N;
+
+            Console.SetWindowSize(40, Int_NumeroOpciones + 10); //Establecemos el tamaño de la ventana
         }
 
         public void SeleccionarOpcion() //tomamos input, nos dirigimos a la línea correspondiente, se la pasamos al array "Array_Acciones"
