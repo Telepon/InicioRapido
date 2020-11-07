@@ -10,16 +10,11 @@ namespace InicioRapido
     /*
      TODO
         
-        - Añadir un parametro de acceso rápido para las opciones, para acceder mediante cadena de texto. Esto precisrá un array - DONE
-            - Revisar con tiempo y estructurar para que sea escalable a subopciones.
-            - Añadir una comprobación de que no haya atajos repetidos. -- DONE
-            - Que el color del acceso rápido sea configurable.
-
         - Investigar posibilidad de pasar datos (texto) a pastebin.
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
        
-         - Repasar "interfaz".
-
+        - Repasar "interfaz".
+        
 
      */
 
