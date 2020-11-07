@@ -11,7 +11,8 @@ namespace InicioRapido
         
         - Añadir un parametro de acceso rápido para las opciones, para acceder mediante cadena de texto. Esto precisrá un array - DONE
             - Revisar con tiempo y estructurar para que sea escalable a subopciones.
-            - Añadir una comprobación de que no haya atajos repetidos.
+            - Añadir una comprobación de que no haya atajos repetidos. -- DONE
+            - Que el color del acceso rápido sea configurable.
 
         - Investigar posibilidad de pasar datos (texto) a pastebin.
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
@@ -43,12 +44,13 @@ namespace InicioRapido
         string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
         string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
 
+        int Int_NumeroOpciones;
 
 
         static void Main(string[] args)
         {
             InicioRapido IR = new InicioRapido();
-            Console.SetWindowSize(40, 15);
+            Console.SetWindowSize(35, 20);
 
             IR.InicializarVariables();
             IR.InicializarDirectorioCFG();
@@ -105,41 +107,49 @@ namespace InicioRapido
             Array_Archivo = File.ReadAllLines(RutaCompleta_Opciones);
             string String_LeerNIf;
             int Contador_N = 0;
-            int Contador_Linea = 0;
 
-            foreach (string line in Array_Archivo)
+            for (int i = 0; i < Array_Archivo.Length; i++)
             {
                 
-                String_LeerNIf = line;
-                if (String_LeerNIf == "") { String_LeerNIf = ";"; } //cambiamos lineas vacias a ;
+                String_LeerNIf = Array_Archivo[i];
+                if (String_LeerNIf == "") { continue; } //cambiamos lineas vacias a ;
 
 
                 if (String_LeerNIf.Substring(0, 1) == "N")//si empieza por N, es una opción
                 {
-                    Array_ListaOpciones[Contador_N] = String_LeerNIf.Substring(1) + " L" + Contador_Linea;
+                    Array_ListaOpciones[Contador_N] = String_LeerNIf.Substring(1) + " L" + i;
 
                     if (String_LeerNIf.Contains("#"))
                     {
-                        Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
+                        if (Array.IndexOf(Array_AtajoOpciones, (String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1))) == -1)
+                        {
+                            Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
+                        }
+                        else
+                        {
+
+                            Console.WriteLine("Atajos repetidos en el mismo menú\nComprueba el script");
+                            Console.ReadLine();
+                            Environment.Exit(0);
+
+                        }
                     }
                     else
                     {
                         Array_AtajoOpciones[Contador_N] = null;
                     }
-                    Contador_N++;
+                    Contador_N++; //cuenta opciones
                 }
-                else
+                
+
+                if (String_LeerNIf == "M30")
                 {
-
-                    if (String_LeerNIf == "M30")
-                    {
-                        Array_ListaOpciones[Contador_N] = String_LeerNIf + " L" + Contador_Linea;
-                        break;
-                    }
+                     Array_ListaOpciones[Contador_N] = String_LeerNIf + " L" + i;
+                     break;
+                }
 
                 }
-                Contador_Linea++;
-            }
+            
 
         }
         #endregion
@@ -176,7 +186,7 @@ namespace InicioRapido
                 }
 
             }
-
+            Int_NumeroOpciones = Contador_N;
         }
 
         public void SeleccionarOpcion() //tomamos input, nos dirigimos a la línea correspondiente, se la pasamos al array "Array_Acciones"
@@ -184,7 +194,7 @@ namespace InicioRapido
             bool Error_ConvertirOpcionSeleccionada;
             string Entrada_OpcionSeleccionada;
             int EntradaConvertida_OpcionSeleccionada = -1;
-            int Indice_OpcionSeleccionadaEnArrayArchivo;
+            int Indice_OpcionSeleccionadaEnArrayArchivo = -1;
             int Contador_ComparacionListaOpcionesConAtajos;
 
 
@@ -206,15 +216,15 @@ namespace InicioRapido
                         }
                         Contador_ComparacionListaOpcionesConAtajos++;
                     }
-                    if(EntradaConvertida_OpcionSeleccionada == -1)//es decir, si no ha habido coincidencia
-                    {
-                        Error_ConvertirOpcionSeleccionada = true;
-                        Console.WriteLine("Introduce un número o el atajo de una acción");
 
-                    }
+                    if(EntradaConvertida_OpcionSeleccionada == -1){Error_ConvertirOpcionSeleccionada = true;} //si no ha habido coincidencia, activamso flag de error
 
 
                 }
+
+                if (Int_NumeroOpciones <= EntradaConvertida_OpcionSeleccionada) { Error_ConvertirOpcionSeleccionada = true; } //si el número pasado no está entre las opciones, activamos flag de error
+                
+                if (Error_ConvertirOpcionSeleccionada) { Console.WriteLine("Introduce un número de opción o un atajo válido."); }
 
             } while (Error_ConvertirOpcionSeleccionada == true);
 
@@ -222,8 +232,8 @@ namespace InicioRapido
             //primero sacamos el numero de linea en el que empieza la opción (indice 0)
             //si, eso es lo que hace la linea a continuación; lee el numero tras la L en el string del array de opciones
             //se recomienda separar la linea en sus funciones basicas por si quieres entenderla
-            
-             Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1));
+
+            Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1)); 
             
             LeerAccionesDeOpcion(Indice_OpcionSeleccionadaEnArrayArchivo);
 
