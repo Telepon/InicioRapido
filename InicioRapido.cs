@@ -18,21 +18,12 @@ namespace InicioRapido
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
        
         - Implementar submenús, que son listas de opciones que no son la principal, y se pueden llamar desde una opción, mediante M98.
-            - Lo ideal es poder tenerlas tanto en archivos separados como en el mismo archivo
-            - En el caso del mismo archivo, la llamada será M98 Pxxxx.
-            - En el caso de un archivo diferente, la llamada será M98 Oxxxx
-            - La implementación reusará código, pero en principio no usaremos la misma función, ya que emplearemos un array diferente (en principio)   
-    
+           - Al leer el archivo, indexar en un array los menús. La posición en el array es la x de Pxxx, y lo que se almacena es el numero de linea en el que empieza
+           - Los submenús tendrá que estar después del M30
+           - Los submenús se identifican con Pxxxx
         - Repasar "interfaz".
 
-    Change log:
-        2020 11 3
-            - Añadida gestión de errores a la hora de ejecutar acciones
-            - Añadida acción G04 Tx, donde x indica un tiempo de pausa en milisegundos
-            - Añadidas regiones al código
 
-        2020 11 4
-            - Añadida la opción de especificar accesos rapidos a las opciones.
      */
 
     class InicioRapido
@@ -44,6 +35,7 @@ namespace InicioRapido
         string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción (sin contar subopciones, que tendrán su propia función para ser leídas)
         string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
         string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
+        int[] Array_IndiceMenus = new int[999]; //establecemos un máximo de 999 menús
 
         int Int_NumeroOpciones;
 
@@ -55,14 +47,8 @@ namespace InicioRapido
 
             IR.InicializarVariables();
             IR.InicializarDirectorioCFG();
-            IR.InterpretarCFG_LeerN();
-
-            while (true)
-            {
-                IR.MostrarOpciones();
-                IR.SeleccionarOpcion();
-                IR.EjecutarAcciones();
-            }
+            IR.IndexarMenus();
+            IR.TodoMenu(0); 
 
         }
 
@@ -103,31 +89,92 @@ namespace InicioRapido
 
         #region Leemos el archivo script principal
 
-        public void InterpretarCFG_LeerN()
+        public void IndexarMenus()
         {
+            bool Bool_PrimerMenuEncontrado = false;
+            int Int_PosicionEnArrayIndiceMenus;
+
             Array_Archivo = File.ReadAllLines(RutaCompleta_Opciones);
-            string String_LeerNIf;
-            int Contador_N = 0;
 
             for (int i = 0; i < Array_Archivo.Length; i++)
             {
-                
-                String_LeerNIf = Array_Archivo[i];
-                if (String_LeerNIf == "") { continue; } //cambiamos lineas vacias a ;
+                if(Array_Archivo[i] == "") { continue; }
 
-
-                if (String_LeerNIf.Substring(0, 1) == "N")//si empieza por N, es una opción
+                if( Array_Archivo[i].Substring(0,1) == "N" && (Bool_PrimerMenuEncontrado == false) )//si la primera letra es una N, y no hemos encontrado el comienzo del menú principal
                 {
-                    Array_ListaOpciones[Contador_N] = String_LeerNIf.Substring(1) + " L" + i;
+                    Array_IndiceMenus[0] = i; //almacenamos el numero de linea del primer menu
+                    Bool_PrimerMenuEncontrado = true; //indicamos que ya sabemos donde empieza el menú principal
 
-                    if (String_LeerNIf.Contains("#"))
+                }
+
+                if(Array_Archivo[i].Substring(0,1) == "P") //si la primera letra es una P
+                {
+                    Int_PosicionEnArrayIndiceMenus = Convert.ToInt32(Array_Archivo[i].Substring(1));
+
+                    Array_IndiceMenus[Int_PosicionEnArrayIndiceMenus] = i; //le pasamos al array el numero de linea del menu, almacenando en la posición del array correspondiente
+
+                }
+
+            }
+
+
+        }
+
+       
+        #endregion
+
+        
+
+        public void TodoMenu(int IndiceMenu) //Esta funcion toma el indice de menu, y lo lee, lo muestra, deja que selecciones, y ejecuta las acciones
+        {
+            do
+            {
+
+                LeerMenu(IndiceMenu);
+                MostrarOpciones();
+                SeleccionarOpcion();
+                EjecutarAcciones();
+
+            } while (true);
+
+        }
+
+        #region Interfaz; leemos menu, mostramos opciones, logica de seleccion, lectura de acciones en opción
+
+        public void LeerMenu(int IndiceMenu)
+        {
+            //Al leer un menú, leemos desde una posición que nos indicará el array de indices de menu
+            //Y leemos hasta que vemos un M99 o un M30
+
+            int int_PosicionInicial = Array_IndiceMenus[IndiceMenu];
+
+            int Contador_N = 0;
+
+            //tenemos que vaciar el array de atajos antes de nada
+            Array.Clear(Array_AtajoOpciones, 0, Array_AtajoOpciones.Length);
+            //y el array de opciones
+            Array.Clear(Array_ListaOpciones, 0, Array_ListaOpciones.Length);
+            
+
+            for (int i = int_PosicionInicial; i < Array_Archivo.Length; i++)
+            {
+
+
+                if (Array_Archivo[i] == "") { continue; } //ignoramos lineas vacías
+
+
+                if (Array_Archivo[i].Substring(0, 1) == "N") //si empieza por N, es una opción
+                {
+                    Array_ListaOpciones[Contador_N] = Array_Archivo[i].Substring(1) + " L" + i; //almacenamos la opción con su numero de linea
+
+                    if (Array_Archivo[i].Contains("#"))
                     {
-                        if ((String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1)) != "") //evitamos meter en el array si no hay atajo especificado
+                        if ((Array_Archivo[i].Substring(Array_Archivo[i].IndexOf("#") + 1)) != "") //evitamos meter en el array si no hay atajo especificado
                         {
 
-                            if (Array.IndexOf(Array_AtajoOpciones, (String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1))) == -1)
+                            if (Array.IndexOf(Array_AtajoOpciones, (Array_Archivo[i].Substring(Array_Archivo[i].IndexOf("#") + 1))) == -1)
                             {
-                                Array_AtajoOpciones[Contador_N] = String_LeerNIf.Substring(String_LeerNIf.IndexOf("#") + 1);
+                                Array_AtajoOpciones[Contador_N] = Array_Archivo[i].Substring(Array_Archivo[i].IndexOf("#") + 1);
                             }
                             else
                             {
@@ -145,23 +192,25 @@ namespace InicioRapido
                     }
                     Contador_N++; //cuenta opciones
                 }
-                
 
-                if (String_LeerNIf == "M30")
+
+                if (Array_Archivo[i] == "M30")
                 {
-                     Array_ListaOpciones[Contador_N] = String_LeerNIf + " L" + i;
-                     break;
+                    Array_ListaOpciones[Contador_N] = Array_Archivo[i] + " L" + i;
+                    break;
+                }
+                if (Array_Archivo[i] == "M99")
+                {
+                    Array_ListaOpciones[Contador_N] = Array_Archivo[i] + " L" + i;
+                    break;
                 }
 
             }
-            
-        }
-        #endregion
 
-        #region Interfaz; mostramos opciones, logica de seleccion, lectura de acciones en opción
+        }
         public void MostrarOpciones()
         {
-            char[] Array_CaracteresFinTextoOpcion = new char[2] {'L', '#'};
+            char[] Array_CaracteresFinTextoOpcion = new char[1] {'#'};
             int Contador_N = 0;
 
             Console.Clear();
@@ -171,7 +220,7 @@ namespace InicioRapido
 
             foreach (string line in Array_ListaOpciones)
             {
-                if (line.Substring(0, 3) == "M30")
+                if (line.Substring(0, 3) == "M30" || line.Substring(0, 3) == "M99")
                 {
                     Console.WriteLine("\n");
                     Console.WriteLine(line.Substring(0, 3));                    
@@ -247,15 +296,11 @@ namespace InicioRapido
 
         public void LeerAccionesDeOpcion(int IndiceDeOpcionEnArray)
         {
-            int Contador_ArrayOpciones = 0;
 
             //antes de pasar nada al array, tenemos que vaciarlo
-            foreach (string field in Array_Acciones)
-            {
-                Array_Acciones[Contador_ArrayOpciones] = null;
-                Contador_ArrayOpciones++;
+            Array.Clear(Array_Acciones,0,Array_Acciones.Length);
 
-            }
+           
 
             //leemos las lineas de acción del Array_Archivo a partir de la indicada por Indice_OpcionSeleccionadaEnArrayArchivo
             int Contador_EntradaArrayAcciones = 0;
@@ -268,7 +313,7 @@ namespace InicioRapido
 
                 if (String_DoWhileLecturaArrayArchivo == "") { String_DoWhileLecturaArrayArchivo = ";"; }
 
-                if (String_DoWhileLecturaArrayArchivo.Substring(0, 1) == "N" || String_DoWhileLecturaArrayArchivo == "M30") { break; } //salimos si encontramos una N o un M30
+                if (String_DoWhileLecturaArrayArchivo.Substring(0, 1) == "N" || String_DoWhileLecturaArrayArchivo == "M30" || String_DoWhileLecturaArrayArchivo == "M99") { break; } //salimos si encontramos una N o un M30
 
                 if (String_DoWhileLecturaArrayArchivo.Substring(0, 1) == "M" || String_DoWhileLecturaArrayArchivo.Substring(0, 1) == "G")
                 {
@@ -302,10 +347,16 @@ namespace InicioRapido
                         try { Process.Start(Argumento_Accion); }
                         catch { Console.Write("Hubo un error al intentar ejecutar la acción."); Console.WriteLine("Comprueba que la orden está escrita correctamente en el script"); Console.ReadLine(); }//Esta funcion hace todo lo que tenía pensado inicialmente
                         break;
+
                     case "G04": //pausa de duración programada
                         int Tiempo_PausaMilisegundos = Convert.ToInt32(line.Substring(line.IndexOf("T")+1));
                         try { Thread.Sleep(Tiempo_PausaMilisegundos); }
                         catch { Console.WriteLine("No se ha podido ejecutar la pausa"); Console.WriteLine("Comprueba que lo has escrito correctamente en el script"); Console.ReadLine(); }
+                        break;
+
+                    case "M98": //llamada a submenú
+                        int NumeroMenu = Convert.ToInt32(line.Substring(line.IndexOf("P") + 1));
+                        TodoMenu(NumeroMenu);
                         break;
                 }
 
