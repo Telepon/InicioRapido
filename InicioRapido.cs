@@ -2,6 +2,7 @@
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Net;
 
 namespace InicioRapido
 {
@@ -17,11 +18,7 @@ namespace InicioRapido
         - Investigar posibilidad de pasar datos (texto) a pastebin.
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
        
-        - Implementar submenús, que son listas de opciones que no son la principal, y se pueden llamar desde una opción, mediante M98.
-           - Al leer el archivo, indexar en un array los menús. La posición en el array es la x de Pxxx, y lo que se almacena es el numero de linea en el que empieza
-           - Los submenús tendrá que estar después del M30
-           - Los submenús se identifican con Pxxxx
-        - Repasar "interfaz".
+         - Repasar "interfaz".
 
 
      */
@@ -39,6 +36,7 @@ namespace InicioRapido
 
         int Int_NumeroOpciones;
 
+        bool bool_EsSubmenu = false; //no me gusta que esta variable sea global, pero de momento es lo que toca
 
         static void Main(string[] args)
         {
@@ -48,8 +46,11 @@ namespace InicioRapido
             IR.InicializarVariables();
             IR.InicializarDirectorioCFG();
             IR.IndexarMenus();
-            IR.TodoMenu(0); 
 
+            do
+            {
+                IR.TodoMenu(0);
+            } while (true);
         }
 
         //*********************************************************************************************************************************************************
@@ -127,15 +128,18 @@ namespace InicioRapido
 
         public void TodoMenu(int IndiceMenu) //Esta funcion toma el indice de menu, y lo lee, lo muestra, deja que selecciones, y ejecuta las acciones
         {
-            do
-            {
 
+            if (IndiceMenu != 0) {
+                bool_EsSubmenu = true; 
+            } else {
+                bool_EsSubmenu = false; 
+            }
+            
                 LeerMenu(IndiceMenu);
                 MostrarOpciones();
                 SeleccionarOpcion();
                 EjecutarAcciones();
 
-            } while (true);
 
         }
 
@@ -158,7 +162,14 @@ namespace InicioRapido
 
             for (int i = int_PosicionInicial; i < Array_Archivo.Length; i++)
             {
+                //Si es un submenú, haremos que la primera opción sea vovler hacia atrás
+                //Lo metemos en la posición 0 del array lista de opciones
+                //La opción de volver hacia atrás es M98 P0
 
+                if ((bool_EsSubmenu == true) && (Contador_N == 0)) {
+                    Array_ListaOpciones[0] = " <-- Volver #";
+                    Contador_N++;
+                }
 
                 if (Array_Archivo[i] == "") { continue; } //ignoramos lineas vacías
 
@@ -206,6 +217,8 @@ namespace InicioRapido
                 }
 
             }
+
+            
 
         }
         public void MostrarOpciones()
@@ -282,15 +295,22 @@ namespace InicioRapido
 
             } while (Error_ConvertirOpcionSeleccionada == true);
 
+            if (bool_EsSubmenu == true && EntradaConvertida_OpcionSeleccionada == 0) //Si estamos en un submenú, y la entrada es 0, nos saltamos la conversión de entrada
+            {
+                 Array_Acciones[0] = "M98 P0";  //y metemos en el array de acciones la llamada a P0
+                //al salir de este if, vamos directamente a ejecutar acciones
+            }
+            else
+            {
+                //primero sacamos el numero de linea en el que empieza la opción (indice 0)
+                //si, eso es lo que hace la linea a continuación; lee el numero tras la L en el string del array de opciones
+                //se recomienda separar la linea en sus funciones basicas por si quieres entenderla
 
-            //primero sacamos el numero de linea en el que empieza la opción (indice 0)
-            //si, eso es lo que hace la linea a continuación; lee el numero tras la L en el string del array de opciones
-            //se recomienda separar la linea en sus funciones basicas por si quieres entenderla
+                Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1));
 
-            Indice_OpcionSeleccionadaEnArrayArchivo = Convert.ToInt32(Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].Substring((Array_ListaOpciones[EntradaConvertida_OpcionSeleccionada].LastIndexOf('L')) + 1)); 
-            
-            LeerAccionesDeOpcion(Indice_OpcionSeleccionadaEnArrayArchivo);
+                LeerAccionesDeOpcion(Indice_OpcionSeleccionadaEnArrayArchivo);
 
+            }
 
         }
 
@@ -310,6 +330,7 @@ namespace InicioRapido
             do
             {
                 String_DoWhileLecturaArrayArchivo = Array_Archivo[Contador_SalidaArrayArchivo];
+               
 
                 if (String_DoWhileLecturaArrayArchivo == "") { String_DoWhileLecturaArrayArchivo = ";"; }
 
@@ -325,6 +346,7 @@ namespace InicioRapido
 
             } while (true);
 
+ 
         }
         #endregion
 
@@ -356,6 +378,7 @@ namespace InicioRapido
 
                     case "M98": //llamada a submenú
                         int NumeroMenu = Convert.ToInt32(line.Substring(line.IndexOf("P") + 1));
+                        if (NumeroMenu == 0) { continue; } //si la llamada es al menú 0, entendemos que queremos ir al menú anterior. Así que salimos sin ejecutar
                         TodoMenu(NumeroMenu);
                         break;
                 }
