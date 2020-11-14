@@ -2,7 +2,7 @@
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
-using System.Net;
+using System.Windows.Forms;
 
 namespace InicioRapido
 {
@@ -11,6 +11,7 @@ namespace InicioRapido
      TODO
         
         - Investigar posibilidad de pasar datos (texto) a pastebin.
+            - Hecho. Ampliar funcionalidad para poder sacar el texto de un fichero
         - Integrar variables de sistema en el lenguaje de script, como fecha (formato yyyymmdd), appdata.
        
         - Repasar "interfaz".
@@ -32,7 +33,8 @@ namespace InicioRapido
         int Int_NumeroOpciones;
 
         bool bool_EsSubmenu = false; //no me gusta que esta variable sea global, pero de momento es lo que toca
-
+        
+        [STAThread] //Necesario si queremos que funcione lo de copiar texto al portapapeles
         static void Main(string[] args)
         {
             InicioRapido IR = new InicioRapido();
@@ -360,8 +362,8 @@ namespace InicioRapido
                 switch (M_Accion)
                 {
                     case "M03":
-                        string Argumento_Accion = line.Substring(line.IndexOf("F") + 1);
-                        try { Process.Start(Argumento_Accion); }
+                        string Param_M03 = line.Substring(line.IndexOf("F") + 1);
+                        try { Process.Start(Param_M03); }
                         catch { Console.Write("Hubo un error al intentar ejecutar la acción."); Console.WriteLine("Comprueba que la orden está escrita correctamente en el script"); Console.ReadLine(); }//Esta funcion hace todo lo que tenía pensado inicialmente
                         break;
 
@@ -376,6 +378,10 @@ namespace InicioRapido
                         if (NumeroMenu == 0) { continue; } //si la llamada es al menú 0, entendemos que queremos ir al menú anterior. Así que salimos sin ejecutar
                         TodoMenu(NumeroMenu);
                         break;
+                    case "M06": //meter datos al portapapeles
+                        string Param_M06 = line.Substring(4);
+                        Accion_M06(Param_M06);
+                        break;
                 }
 
 
@@ -383,6 +389,19 @@ namespace InicioRapido
             }
             
         
+        }
+
+        public void Accion_M06(string Param_M06)
+        {
+            string String_Switch = Param_M06.Substring(0, 1);
+            switch (String_Switch)
+            {
+                case "T":
+                    Clipboard.SetText(Param_M06.Substring(1));
+                    break;
+            }
+            
+
         }
         #endregion
     }
