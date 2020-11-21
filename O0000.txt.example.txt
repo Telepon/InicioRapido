@@ -1,5 +1,5 @@
 ; Archivo de script ejemplo
-; a fecha 2020 11 7
+; a fecha 2020 11 3
 ; el caracter ; al principio de una linea indica que es un comentario
 ; Nx indica el nombre de la opción, en las lineas siguientes se especifican las acciones que realiza la acción
 ; usaremos códigos M, para emular un ISO-G
@@ -10,11 +10,10 @@
 ;	Si le pasas una ruta de directorio, lo abre con explorer
 ; M04 queda reservado a un futuro
 ; M06 es una llamada a linea de comandos de MS-DOS (pendiente desarrollarlo)
-; M30 indica el fin del menú principal
-
-; después del M30 vienen los submenús
-; empiezan con Pxxxx, y terminan con M99
-; dentro de los submenús, las opciones se escriben como en el menú principal
+; M30 indica el fin del archivo (y puedes poner lo que quieras después, ya que no será leido por el programa)
+; M98 Px indica una llamada a un submenú, que se pone después del M30
+;	El submenú empieza con una linea Px, y termina con una linea M99
+;	Entre medias, puedes poner opciones como se hace en la sección principal
 
 ;sobre formato: 
 ;	- Es Mxx, es decir, no será M3, si no M03. 
@@ -24,24 +23,36 @@
 ;	- # indica el acceso rápido a una opción. Es decir, no usar en ningún otro lugar.
 ;	- EL CARACTER # ES OBLIGATORIO, AUNQUE NO SE ESPECIFIQUE ATAJO
 
+M97 OFrases
+
 N Abrir directorio Aplicaciones #app
 M03 FD:\App\
-M03 FD:\Pics\
 
 N Abrir Media-Downloader #
 M03 FD:\App\MediaDownloader\Media_Downloader.exe
 
-N Pics #pics
-M03 FD:\Pics
+N Descargas #dl
+M03 FC:\Users\xxx\Downloads
 
-N Submenú #
-M98 P1
+N Directorio proyectos Csharp #cpro
+M03 FD:\Proyectos\C#
+
+N Añadir música a itunes #music
+M03 FC:\Users\xxx\Music\iTunes\iTunes Media\Añadir automáticamente a iTunes
+
+N Abrir O0000 #cfg
+M03 FC:\Users\xxx\AppData\Roaming\OKR\InicioRapido\O0000.txt
+
+N Pics #pics
+M98 P10
 
 M30
 
+;después del M30 vienen los submenús
+;empiezan con Pxxxx, y terminan con M99
+; dentro de los submenús, las opciones se escriben como en el menú principal
 
-
-P1
+P10
 
 N IRL #irl
 M03 FD:\pics\IRL
@@ -50,3 +61,7 @@ N irl #nirl
 M03 FD:\pics\NIRL
 
 M99
+
+
+
+
