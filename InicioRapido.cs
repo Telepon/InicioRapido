@@ -32,8 +32,8 @@ namespace InicioRapido
         string String_FraseDelMomento; //usar variables públicas es cómodo
 
         string[] Array_ListaOpciones = new string[999];
-        string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción (sin contar subopciones, que tendrán su propia función para ser leídas)
-        string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
+        string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción
+        string[] Array_Archivo;
         string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
         string[] Array_FrasesDelMomento;
         int[] Array_IndiceMenus = new int[999]; //establecemos un máximo de 999 menús
