@@ -16,6 +16,12 @@ namespace InicioRapido
        
         - Repasar "interfaz".
         
+    -Funcionalidad inútil: Escribir en pantalla un string de una linea aleatoria de un fichero de texto
+        - M97 ONombreficheroendirectorioappdata
+        - Tiene que estar antes del primer N
+        - El fichero del que se lee se establece en el momento de leer el cfg
+        - El string aleatorio cambia cada vez que se accede a un menú
+
 
      */
 
@@ -23,17 +29,21 @@ namespace InicioRapido
     {
 
         string Ruta_CarpetaAppData, NombreFichero_Opciones, RutaCompleta_Opciones;
+        string String_FraseDelMomento; //usar variables públicas es cómodo
 
         string[] Array_ListaOpciones = new string[999];
         string[] Array_Acciones = new string[10]; //Establecemos un maximo de 10 acciones por opción (sin contar subopciones, que tendrán su propia función para ser leídas)
         string[] Array_Archivo = new string[999]; //establecemos un máximo de 999 lineas por archivo
         string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
+        string[] Array_FrasesDelMomento;
         int[] Array_IndiceMenus = new int[999]; //establecemos un máximo de 999 menús
 
-        int Int_NumeroOpciones;
+        int Int_NumeroOpciones, Int_AnchoVentanaFinal;
+        int Int_NumeroAleatorio = -1;
+        const int Int_AnchoVentanaInicial = 40;
 
         bool bool_EsSubmenu = false; //no me gusta que esta variable sea global, pero de momento es lo que toca
-        
+
         [STAThread] //Necesario si queremos que funcione lo de copiar texto al portapapeles
         static void Main(string[] args)
         {
@@ -41,8 +51,12 @@ namespace InicioRapido
             Console.SetWindowSize(40, 20);
 
             IR.InicializarVariables();
+
+            
+
             IR.InicializarDirectorioCFG();
             IR.IndexarMenus();
+            IR.LeerArchivoFrasesDelMomento();
 
             do
             {
@@ -60,6 +74,8 @@ namespace InicioRapido
 
             NombreFichero_Opciones = @"O0000.txt";                                                 //Nombre del fichero
             RutaCompleta_Opciones = (Ruta_CarpetaAppData + @"\" + NombreFichero_Opciones);      //Ruta completa del fichero
+
+                  
 
 
         }
@@ -81,7 +97,7 @@ namespace InicioRapido
             }
 
             if (FilesWereCreated) { Environment.Exit(0); }
-            
+
         }
         #endregion
 
@@ -96,16 +112,16 @@ namespace InicioRapido
 
             for (int i = 0; i < Array_Archivo.Length; i++)
             {
-                if(Array_Archivo[i] == "") { continue; }
+                if (Array_Archivo[i] == "") { continue; }
 
-                if( Array_Archivo[i].Substring(0,1) == "N" && (Bool_PrimerMenuEncontrado == false) )//si la primera letra es una N, y no hemos encontrado el comienzo del menú principal
+                if (Array_Archivo[i].Substring(0, 1) == "N" && (Bool_PrimerMenuEncontrado == false))//si la primera letra es una N, y no hemos encontrado el comienzo del menú principal
                 {
                     Array_IndiceMenus[0] = i; //almacenamos el numero de linea del primer menu
                     Bool_PrimerMenuEncontrado = true; //indicamos que ya sabemos donde empieza el menú principal
 
                 }
 
-                if(Array_Archivo[i].Substring(0,1) == "P") //si la primera letra es una P
+                if (Array_Archivo[i].Substring(0, 1) == "P") //si la primera letra es una P
                 {
                     Int_PosicionEnArrayIndiceMenus = Convert.ToInt32(Array_Archivo[i].Substring(1));
 
@@ -118,24 +134,51 @@ namespace InicioRapido
 
         }
 
-       
+        public void LeerArchivoFrasesDelMomento()
+        {
+            //Aquí buscaremos un string en el array que empiece por M97, la interpretaremos para saber qué archivo contiene los textos, comprobaremos si el archivo existe, y lo cargaremos en un array
+
+
+            for (int i = 0; i < Array_Archivo.Length; i++)
+            {
+                if (Array_Archivo[i].Length < 3) { continue; }
+                if (Array_Archivo[i].Substring(0, 3) == "M97")
+                {
+                    string NombreFichero_FrasesDelMomento = Array_Archivo[i].Substring(Array_Archivo[i].IndexOf('O') + 1);
+                    string RutaCompleta_FrasesDelMomento = Ruta_CarpetaAppData + @"\" + NombreFichero_FrasesDelMomento;
+                    try { Array_FrasesDelMomento = File.ReadAllLines(RutaCompleta_FrasesDelMomento); }
+                    catch { Array_FrasesDelMomento[0] = null;
+                    } 
+                    break;
+
+                }
+
+            }
+
+
+        }
+
+
         #endregion
 
-        
+
 
         public void TodoMenu(int IndiceMenu) //Esta funcion toma el indice de menu, y lo lee, lo muestra, deja que selecciones, y ejecuta las acciones
         {
 
-            if (IndiceMenu != 0) {
-                bool_EsSubmenu = true; 
-            } else {
-                bool_EsSubmenu = false; 
+            if (IndiceMenu != 0)
+            {
+                bool_EsSubmenu = true;
             }
-            
-                LeerMenu(IndiceMenu);
-                MostrarOpciones();
-                SeleccionarOpcion();
-                EjecutarAcciones();
+            else
+            {
+                bool_EsSubmenu = false;
+            }
+
+            LeerMenu(IndiceMenu);
+            MostrarOpciones();
+            SeleccionarOpcion();
+            EjecutarAcciones();
 
 
         }
@@ -155,7 +198,7 @@ namespace InicioRapido
             Array.Clear(Array_AtajoOpciones, 0, Array_AtajoOpciones.Length);
             //y el array de opciones
             Array.Clear(Array_ListaOpciones, 0, Array_ListaOpciones.Length);
-            
+
 
             for (int i = int_PosicionInicial; i < Array_Archivo.Length; i++)
             {
@@ -163,7 +206,8 @@ namespace InicioRapido
                 //Lo metemos en la posición 0 del array lista de opciones
                 //La opción de volver hacia atrás es M98 P0
 
-                if ((bool_EsSubmenu == true) && (Contador_N == 0)) {
+                if ((bool_EsSubmenu == true) && (Contador_N == 0))
+                {
                     Array_ListaOpciones[0] = " <-- Volver #";
                     Contador_N++;
                 }
@@ -215,16 +259,38 @@ namespace InicioRapido
 
             }
 
-            
+
 
         }
+        public void LeerFraseDelMomento()
+        {
+            
+            //comprobaremos si el array está vacio. Si lo está, metemos un placeholder en la variable y nos saltamos el resto con un return
+            //En realidad me he asegurado de que haya al menos un elemento en el array, y que si no hay nada, le asigne el valor null.
+            if (Array_FrasesDelMomento[0] == null)
+            {
+                String_FraseDelMomento = "Su frase aquí";
+                return;
+            }
+
+            //En cualquier otro caso, seleccionamos un numero entre 0 y la longitud del array, y cogemos el string de ahí   
+
+            Int_NumeroAleatorio = RNG_SIN(0, Array_FrasesDelMomento.Length-1);
+            String_FraseDelMomento = Array_FrasesDelMomento[Int_NumeroAleatorio];
+            
+        }
+
+
+
+
         public void MostrarOpciones()
         {
-            char[] Array_CaracteresFinTextoOpcion = new char[1] {'#'};
+            char[] Array_CaracteresFinTextoOpcion = new char[1] { '#' };
             int Contador_N = 0;
 
             Console.Clear();
-            Console.WriteLine("Lista de opciones");
+            LeerFraseDelMomento();
+            Console.WriteLine(String_FraseDelMomento);
             Console.WriteLine("");
             Console.WriteLine("Nº|Nombre");
 
@@ -233,16 +299,16 @@ namespace InicioRapido
                 if (line.Substring(0, 3) == "M30" || line.Substring(0, 3) == "M99")
                 {
                     Console.WriteLine("\n");
-                    Console.WriteLine(line.Substring(0, 3));                    
+                    Console.WriteLine(line.Substring(0, 3));
                     break;
                 }
                 else
                 {
-                    
+
                     Console.Write(Environment.NewLine + Contador_N + line.Substring(0, line.IndexOfAny(Array_CaracteresFinTextoOpcion)));
-                    
+
                     Console.ForegroundColor = ConsoleColor.Red; //Letras rojas
-                    Console.Write('#' + Array_AtajoOpciones[Contador_N]);                     
+                    Console.Write('#' + Array_AtajoOpciones[Contador_N]);
                     Console.ForegroundColor = ConsoleColor.Gray; //Letras grises, color por defecto
                     Contador_N++;
                 }
@@ -250,7 +316,17 @@ namespace InicioRapido
             }
             Int_NumeroOpciones = Contador_N;
 
-            Console.SetWindowSize(40, Int_NumeroOpciones + 10); //Establecemos el tamaño de la ventana
+            //Anda mira, un trocito de logica que decide el ancho de la ventana en función del largo de la frase
+            if(String_FraseDelMomento.Length > Int_AnchoVentanaInicial){
+                Int_AnchoVentanaFinal = String_FraseDelMomento.Length;
+            }
+            else
+            {
+                Int_AnchoVentanaFinal = Int_AnchoVentanaInicial;
+            }
+
+           
+            Console.SetWindowSize(Int_AnchoVentanaFinal, Int_NumeroOpciones + 10); //Establecemos el tamaño de la ventana
         }
 
         public void SeleccionarOpcion() //tomamos input, nos dirigimos a la línea correspondiente, se la pasamos al array "Array_Acciones"
@@ -266,7 +342,7 @@ namespace InicioRapido
             {
                 Error_ConvertirOpcionSeleccionada = false;
 
-                Entrada_OpcionSeleccionada = Console.ReadLine();
+                Entrada_OpcionSeleccionada = Console.ReadLine().ToLower(); //aunque introduzcamos mayúsuculas, lo convierte a minúsculas
 
                 try { EntradaConvertida_OpcionSeleccionada = Convert.ToInt32(Entrada_OpcionSeleccionada); } //si es un int, es el número de la opción
                 catch //si no, puede ser el atajo
@@ -274,27 +350,28 @@ namespace InicioRapido
                     Contador_ComparacionListaOpcionesConAtajos = 0; //ponemos el contador a 0
                     foreach (string line in Array_AtajoOpciones)
                     {
-                        if (line == Entrada_OpcionSeleccionada) {
+                        if (line == Entrada_OpcionSeleccionada)
+                        {
                             EntradaConvertida_OpcionSeleccionada = Contador_ComparacionListaOpcionesConAtajos;
-                            break; 
+                            break;
                         }
                         Contador_ComparacionListaOpcionesConAtajos++;
                     }
 
-                    if(EntradaConvertida_OpcionSeleccionada == -1){Error_ConvertirOpcionSeleccionada = true;} //si no ha habido coincidencia, activamso flag de error
+                    if (EntradaConvertida_OpcionSeleccionada == -1) { Error_ConvertirOpcionSeleccionada = true; } //si no ha habido coincidencia, activamso flag de error
 
 
                 }
 
                 if (Int_NumeroOpciones <= EntradaConvertida_OpcionSeleccionada) { Error_ConvertirOpcionSeleccionada = true; } //si el número pasado no está entre las opciones, activamos flag de error
-                
+
                 if (Error_ConvertirOpcionSeleccionada) { Console.WriteLine("Introduce un número de opción o un atajo válido."); }
 
             } while (Error_ConvertirOpcionSeleccionada == true);
 
             if (bool_EsSubmenu == true && EntradaConvertida_OpcionSeleccionada == 0) //Si estamos en un submenú, y la entrada es 0, nos saltamos la conversión de entrada
             {
-                 Array_Acciones[0] = "M98 P0";  //y metemos en el array de acciones la llamada a P0
+                Array_Acciones[0] = "M98 P0";  //y metemos en el array de acciones la llamada a P0
                 //al salir de este if, vamos directamente a ejecutar acciones
             }
             else
@@ -315,9 +392,9 @@ namespace InicioRapido
         {
 
             //antes de pasar nada al array, tenemos que vaciarlo
-            Array.Clear(Array_Acciones,0,Array_Acciones.Length);
+            Array.Clear(Array_Acciones, 0, Array_Acciones.Length);
 
-           
+
 
             //leemos las lineas de acción del Array_Archivo a partir de la indicada por Indice_OpcionSeleccionadaEnArrayArchivo
             int Contador_EntradaArrayAcciones = 0;
@@ -327,7 +404,7 @@ namespace InicioRapido
             do
             {
                 String_DoWhileLecturaArrayArchivo = Array_Archivo[Contador_SalidaArrayArchivo];
-               
+
 
                 if (String_DoWhileLecturaArrayArchivo == "") { String_DoWhileLecturaArrayArchivo = ";"; }
 
@@ -343,7 +420,7 @@ namespace InicioRapido
 
             } while (true);
 
- 
+
         }
         #endregion
 
@@ -351,11 +428,11 @@ namespace InicioRapido
         public void EjecutarAcciones() //ejecutamos las opciones almacenadas en el array_acciones
         {
             string M_Accion;
-           
-            //leemos cada string del array hasta llegar a un null
-                //interpretamos las líneas
 
-            foreach(string line in Array_Acciones)
+            //leemos cada string del array hasta llegar a un null
+            //interpretamos las líneas
+
+            foreach (string line in Array_Acciones)
             {
                 if (line == null) { break; }
                 M_Accion = line.Substring(0, 3);
@@ -368,7 +445,7 @@ namespace InicioRapido
                         break;
 
                     case "G04": //pausa de duración programada
-                        int Tiempo_PausaMilisegundos = Convert.ToInt32(line.Substring(line.IndexOf("T")+1));
+                        int Tiempo_PausaMilisegundos = Convert.ToInt32(line.Substring(line.IndexOf("T") + 1));
                         try { Thread.Sleep(Tiempo_PausaMilisegundos); }
                         catch { Console.WriteLine("No se ha podido ejecutar la pausa"); Console.WriteLine("Comprueba que lo has escrito correctamente en el script"); Console.ReadLine(); }
                         break;
@@ -387,8 +464,8 @@ namespace InicioRapido
 
 
             }
-            
-        
+
+
         }
 
         public void Accion_M06(string Param_M06)
@@ -400,10 +477,27 @@ namespace InicioRapido
                     Clipboard.SetText(Param_M06.Substring(1));
                     break;
             }
-            
+
+
+        }
+        #endregion
+
+        #region Funciones auxiliares
+        public int RNG_SIN(int min, int max) 
+        {
+            //Generamos un número aleatorio a partir de la semilla y los valores maximos y minimos
+            double Double_Semilla = DateTime.Now.ToBinary();
+            double Double_Temporal;
+
+            Double_Temporal = Math.Abs(Math.Sin(Double_Semilla));
+            Double_Temporal = Double_Temporal * (max - min) ;
+            Double_Temporal = Double_Temporal + min;
+            Double_Temporal = Math.Round(Double_Temporal);
+
+            return Convert.ToInt32(Double_Temporal);
+
 
         }
         #endregion
     }
-
 }
