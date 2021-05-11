@@ -27,6 +27,7 @@ namespace InicioRapido
 
     class InicioRapido
     {
+        Random rnd = new Random(DateTime.Now.Day * DateTime.Now.Month * DateTime.Now.Year * DateTime.Now.Hour);
 
         string Ruta_CarpetaAppData, NombreFichero_Opciones, RutaCompleta_Opciones;
         string String_FraseDelMomento; //usar variables públicas es cómodo
@@ -36,6 +37,7 @@ namespace InicioRapido
         string[] Array_Archivo;
         string[] Array_AtajoOpciones = new string[999]; ////establecemos un máximo de 999 atajos a opciones
         string[] Array_FrasesDelMomento;
+        string[] Array_Errores = new string[100];
         int[] Array_IndiceMenus = new int[999]; //establecemos un máximo de 999 menús
 
         int Int_NumeroOpciones, Int_AnchoVentanaFinal;
@@ -275,7 +277,7 @@ namespace InicioRapido
 
             //En cualquier otro caso, seleccionamos un numero entre 0 y la longitud del array, y cogemos el string de ahí   
 
-            Int_NumeroAleatorio = RNG_SIN(0, Array_FrasesDelMomento.Length-1);
+            Int_NumeroAleatorio = RNG_ST(0, Array_FrasesDelMomento.Length-1);
             String_FraseDelMomento = Array_FrasesDelMomento[Int_NumeroAleatorio];
             
         }
@@ -291,6 +293,27 @@ namespace InicioRapido
             Console.Clear();
             LeerFraseDelMomento();
             Console.WriteLine(String_FraseDelMomento);
+
+            //Anda mira, un trocito de logica que decide el ancho y alto de la ventana
+
+            for (int i = 0; i < Array_ListaOpciones.Length; i++)
+            {
+                if(Array_ListaOpciones[i].Substring(0,3) == "M30" || Array_ListaOpciones[i].Substring(0, 3) == "M99") { Int_NumeroOpciones = i;  break; }
+            }
+
+            if (String_FraseDelMomento.Length > Int_AnchoVentanaInicial)
+            {
+                Int_AnchoVentanaFinal = String_FraseDelMomento.Length;
+            }
+            else
+            {
+                Int_AnchoVentanaFinal = Int_AnchoVentanaInicial;
+            }
+
+
+            Console.SetWindowSize(Int_AnchoVentanaFinal, Int_NumeroOpciones + 10); //Establecemos el tamaño de la ventana
+
+
             Console.WriteLine("");
             Console.WriteLine("Nº|Nombre");
 
@@ -316,17 +339,15 @@ namespace InicioRapido
             }
             Int_NumeroOpciones = Contador_N;
 
-            //Anda mira, un trocito de logica que decide el ancho de la ventana en función del largo de la frase
-            if(String_FraseDelMomento.Length > Int_AnchoVentanaInicial){
-                Int_AnchoVentanaFinal = String_FraseDelMomento.Length;
-            }
-            else
-            {
-                Int_AnchoVentanaFinal = Int_AnchoVentanaInicial;
-            }
+            
 
-           
-            Console.SetWindowSize(Int_AnchoVentanaFinal, Int_NumeroOpciones + 10); //Establecemos el tamaño de la ventana
+            foreach(string line in Array_Errores)
+            {
+                if(line == null) { break; }
+                Console.WriteLine(line);
+
+            }
+            Array.Clear(Array_Errores, 0, Array_Errores.Length);
         }
 
         public void SeleccionarOpcion() //tomamos input, nos dirigimos a la línea correspondiente, se la pasamos al array "Array_Acciones"
@@ -429,40 +450,64 @@ namespace InicioRapido
         {
             string M_Accion;
 
-            //leemos cada string del array hasta llegar a un null
-            //interpretamos las líneas
+            bool ContieneM98 = false;
+
+            //Comprobamos la presencia de M98 entre las acciones.
+            //Si lo hay, ejecutamos sin separar a otro hilo
 
             foreach (string line in Array_Acciones)
             {
                 if (line == null) { break; }
-                M_Accion = line.Substring(0, 3);
-                switch (M_Accion)
+                if (line.Substring(0, 3) == "M98") { ContieneM98 = true; break; }
+            }
+
+            if (ContieneM98)
+            {
+                Ejecucion();
+            }
+            else
+            {
+                Thread Hilo_EjecutarAcciones = new Thread(Ejecucion);
+                Hilo_EjecutarAcciones.Start();
+
+            }
+
+            //leemos cada string del array hasta llegar a un null
+            //interpretamos las líneas
+            void Ejecucion()
+            {
+                foreach (string line in Array_Acciones)
                 {
-                    case "M03":
-                        string Param_M03 = line.Substring(line.IndexOf("F") + 1);
-                        try { Process.Start(Param_M03); }
-                        catch { Console.Write("Hubo un error al intentar ejecutar la acción."); Console.WriteLine("Comprueba que la orden está escrita correctamente en el script"); Console.ReadLine(); }//Esta funcion hace todo lo que tenía pensado inicialmente
-                        break;
+                    if (line == null) { break; }
+                    M_Accion = line.Substring(0, 3);
+                    switch (M_Accion)
+                    {
+                        case "M03":
+                            string Param_M03 = line.Substring(line.IndexOf("F") + 1);
+                            try { Process.Start(Param_M03); }
+                            catch { Anyadir_Array("Error al ejecutar *" + Param_M03 + "*");}//Esta funcion hace todo lo que tenía pensado inicialmente
+                            break;
 
-                    case "G04": //pausa de duración programada
-                        int Tiempo_PausaMilisegundos = Convert.ToInt32(line.Substring(line.IndexOf("T") + 1));
-                        try { Thread.Sleep(Tiempo_PausaMilisegundos); }
-                        catch { Console.WriteLine("No se ha podido ejecutar la pausa"); Console.WriteLine("Comprueba que lo has escrito correctamente en el script"); Console.ReadLine(); }
-                        break;
+                        case "G04": //pausa de duración programada
+                            int Tiempo_PausaMilisegundos = Convert.ToInt32(line.Substring(line.IndexOf("T") + 1));
+                            try { Thread.Sleep(Tiempo_PausaMilisegundos); }
+                            catch { Anyadir_Array("Error al ejecutar la pausa"); }
+                            break;
 
-                    case "M98": //llamada a submenú
-                        int NumeroMenu = Convert.ToInt32(line.Substring(line.IndexOf("P") + 1));
-                        if (NumeroMenu == 0) { continue; } //si la llamada es al menú 0, entendemos que queremos ir al menú anterior. Así que salimos sin ejecutar
-                        TodoMenu(NumeroMenu);
-                        break;
-                    case "M06": //meter datos al portapapeles
-                        string Param_M06 = line.Substring(4);
-                        Accion_M06(Param_M06);
-                        break;
+                        case "M98": //llamada a submenú
+                            int NumeroMenu = Convert.ToInt32(line.Substring(line.IndexOf("P") + 1));
+                            if (NumeroMenu == 0) { continue; } //si la llamada es al menú 0, entendemos que queremos ir al menú anterior. Así que salimos sin ejecutar
+                            TodoMenu(NumeroMenu);
+                            break;
+                        case "M06": //meter datos al portapapeles
+                            string Param_M06 = line.Substring(4);
+                            Accion_M06(Param_M06);
+                            break;
+                    }
+
+
+
                 }
-
-
-
             }
 
 
@@ -483,19 +528,22 @@ namespace InicioRapido
         #endregion
 
         #region Funciones auxiliares
-        public int RNG_SIN(int min, int max) 
+        public int RNG_ST(int min, int max) //generamos un número aleatorio a partir de una semilla decidida en el momento de ejecución
         {
-            //Generamos un número aleatorio a partir de la semilla y los valores maximos y minimos
-            double Double_Semilla = DateTime.Now.ToBinary();
-            double Double_Temporal;
 
-            Double_Temporal = Math.Abs(Math.Sin(Double_Semilla));
-            Double_Temporal = Double_Temporal * (max - min) ;
-            Double_Temporal = Double_Temporal + min;
-            Double_Temporal = Math.Round(Double_Temporal);
 
-            return Convert.ToInt32(Double_Temporal);
+            return rnd.Next(min, max + 1); ;
 
+
+        }
+
+        public void Anyadir_Array(string Error)
+        {
+
+            for (int i = 0; i < Array_Errores.Length; i++)
+            {
+                if (Array_Errores[i] == null) { Array_Errores[i] = Error; break; }
+            }
 
         }
         #endregion
