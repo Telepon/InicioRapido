@@ -46,7 +46,8 @@ namespace InicioRapido
 
         bool bool_EsSubmenu = false; //no me gusta que esta variable sea global, pero de momento es lo que toca
 
-        [STAThread] //Necesario si queremos que funcione lo de copiar texto al portapapeles
+
+        [STAThread]
         static void Main(string[] args)
         {
             InicioRapido IR = new InicioRapido();
@@ -450,18 +451,18 @@ namespace InicioRapido
         {
             string M_Accion;
 
-            bool ContieneM98 = false;
+            bool EjecutarEnMonoHilo = false;
 
-            //Comprobamos la presencia de M98 entre las acciones.
-            //Si lo hay, ejecutamos sin separar a otro hilo
+            //Comprobamos la presencia de M98 O M06 entre las acciones.
+            //Si hay alguna de las dos, ejecutamos sin separar a otro hilo
 
             foreach (string line in Array_Acciones)
             {
                 if (line == null) { break; }
-                if (line.Substring(0, 3) == "M98") { ContieneM98 = true; break; }
+                if (line.Substring(0, 3) == "M98" || line.Substring(0, 3) == "M06") { EjecutarEnMonoHilo = true; break; }
             }
 
-            if (ContieneM98)
+            if (EjecutarEnMonoHilo)
             {
                 Ejecucion();
             }
@@ -482,10 +483,14 @@ namespace InicioRapido
                     M_Accion = line.Substring(0, 3);
                     switch (M_Accion)
                     {
-                        case "M03":
-                            string Param_M03 = line.Substring(line.IndexOf("F") + 1);
-                            try { Process.Start(Param_M03); }
-                            catch { Anyadir_Array("Error al ejecutar *" + Param_M03 + "*");}//Esta funcion hace todo lo que tenía pensado inicialmente
+                        case "M03"://apertura de un fichero o carpeta. Incluye ejecutables.
+                            try { Process.Start(line.Substring(line.IndexOf("F") + 1)); }
+                            catch { Anyadir_Array("Error al ejecutar *" + line.Substring(line.IndexOf("F") + 1) + "*");}
+                            break;
+
+                        case "M04": //ejecución del "argumento" en cmd
+                            try { Process.Start("CMD.exe","/C" + line.Substring(line.IndexOf("F") + 1)); }
+                            catch { Anyadir_Array("Error al ejecutar *" + line.Substring(line.IndexOf("F") + 1) + "*"); }
                             break;
 
                         case "G04": //pausa de duración programada
@@ -509,6 +514,8 @@ namespace InicioRapido
 
                 }
             }
+
+         
 
 
         }
